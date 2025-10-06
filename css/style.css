@@ -1,0 +1,10 @@
+body{
+    font-family: "Atkinson Hyperlegible Next", sans-serif;
+    font-optical-sizing: auto;
+}
+
+.logo {
+    font-weight: 700; /* or normal, 700, bold, etc. */
+    font-style: normal;
+    font-size: x-large;
+}
