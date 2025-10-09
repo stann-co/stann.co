@@ -1,0 +1,21 @@
+.banner{
+	display: grid;
+  	overflow: hidden;
+
+	h1, .background-image {
+		grid-area: 1 / 1;	
+	}
+
+	h1{
+		place-self: center;
+
+	}
+
+	.background-image{
+
+		height: 100px;
+		img{
+			width: 100%;
+		}
+	}
+}

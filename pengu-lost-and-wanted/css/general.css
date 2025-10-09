@@ -1,0 +1,154 @@
+/* #region Font Faces */
+/* Hyperlegible Font Face */
+@font-face {
+	font-family: "Hyperlegible";
+	src: url("../assets/fonts/AtkinsonHyperlegible-Regular.woff") format("woff");
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Hyperlegible Bold */
+@font-face {
+	font-family: "Hyperlegible";
+	src: url("../assets/fonts/Atkinson-Hyperlegible-Bold.woff") format("woff");
+	font-weight: bold;
+	font-style: normal;
+}
+
+/* Hyperlegible Italic */
+@font-face {
+	font-family: "Hyperlegible";
+	src: url("../assets/fonts/Atkinson-Hyperlegible-Italic.woff") format("woff");
+	font-weight: normal;
+	font-style: italic;
+}
+
+/* Hyperlegible Bold Italic */
+@font-face {
+	font-family: "Hyperlegible";
+	src: url("../assets/fonts/Atkinson-Hyperlegible-BoldItalic.woff") format("woff");
+	font-weight: bold;
+	font-style: italic;
+}
+
+/* Action Man Font Face */
+@font-face {
+	font-family: "Action Man";
+	src: url("../assets/fonts/Action_Man.woff") format("woff");
+	font-weight: normal;
+	font-style: normal;
+}
+
+/* Action Man Bold */
+@font-face {
+	font-family: "Action Man";
+	src: url("../assets/fonts/Action_Man_Bold.woff") format("woff");
+	font-weight: bold;
+	font-style: normal;
+}
+
+/* Action Man Bold Italic */
+@font-face {
+	font-family: "Action Man";
+	src: url("../assets/fonts/Action_Man_Bold_Italic.woff") format("woff");
+	font-weight: bold;
+	font-style: italic;
+}
+/* #endregion */
+
+:root {
+	/* Color vars */
+	--color-side: #202024;
+	--color-bg: #464851;
+	--color-nav: #31333b;
+	--color-blue: #1867cd;
+}
+
+/* Example usage */
+.hyperlegible {
+	font-family: "Hyperlegible", Arial, sans-serif;
+}
+
+.action-man {
+	font-family: "Action Man", Arial, sans-serif;
+}
+
+.fill-x {
+	width: 100%;
+}
+
+* {
+	margin: 0;
+	font-family: "Hyperlegible", Arial, sans-serif;
+	color: white;
+}
+
+main {
+	background-color: var(--color-side);
+}
+
+header,
+footer {
+	background-color: var(--color-nav);
+	text-align: center;
+	padding: 0;
+}
+
+h3{
+	font-family: "Action Man";
+	color: var(--color-blue);
+	font-size: 48px;
+	-webkit-text-stroke: 7px white;
+	paint-order: stroke fill;
+	text-align: center;
+	text-shadow: 0px 8px 20px black;
+	margin: 0.5em 0;
+}
+
+p {
+	line-height: 1.2em;
+	margin: 1em 0;
+	font-size: 18px;
+}
+
+nav {
+	padding: 0;
+	margin: 0;
+	text-align: center;
+	display: inline-flex;
+	a {
+		padding: 1em;
+		text-decoration: none;
+		color: white;
+		font-weight: bold;
+		font-size: 24px;
+	}
+}
+
+.contents {
+	max-width: 1000px;
+	margin: auto;
+	background-color: var(--color-bg);
+}
+
+.contents-inner{
+	max-width: 700px;
+	margin: auto;
+}
+
+.pengu-slide-bar {
+	cursor: default;
+	text-align: center;
+	img {
+		width: 10.5%;
+		margin: 0 0.5%;
+	}
+}
+
+.socials {
+	img {
+		width: 32px;
+		height: 32px;
+		margin: 0 0.5rem;
+	}
+}
