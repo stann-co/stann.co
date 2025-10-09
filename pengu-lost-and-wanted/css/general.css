@@ -81,6 +81,7 @@
 	margin: 0;
 	font-family: "Hyperlegible", Arial, sans-serif;
 	color: white;
+	font-size: 18px;
 }
 
 main {
@@ -91,7 +92,20 @@ header,
 footer {
 	background-color: var(--color-nav);
 	text-align: center;
-	padding: 0;
+}
+
+footer {
+	padding: 1.5em;
+	p {
+		margin: 0;
+		margin-top: 1em;
+	}
+}
+
+h2{
+	font-size: 32px;
+	margin: 0.5em 0;
+	font-style: italic;
 }
 
 h3{
@@ -109,6 +123,10 @@ p {
 	line-height: 1.2em;
 	margin: 1em 0;
 	font-size: 18px;
+}
+
+ul {
+	margin: 2em 0;
 }
 
 nav {
@@ -129,6 +147,8 @@ nav {
 	max-width: 1000px;
 	margin: auto;
 	background-color: var(--color-bg);
+	position: relative;
+    overflow: visible;
 }
 
 .contents-inner{
@@ -143,6 +163,43 @@ nav {
 		width: 10.5%;
 		margin: 0 0.5%;
 	}
+}
+
+.steam-wishlist{
+
+	text-align: center;
+	width: 100%;
+
+	a{
+		display: inline-flex;
+		width: 469px;
+		height: 117px;
+		background-color: var(--color-nav);
+		padding: 1em;
+		margin: 10em 0;
+		text-decoration: none;
+		border-radius: 100px;
+		
+		p{
+			align-self: center;
+			flex: auto;
+			font-size: 35px;
+			font-weight: bold;
+			text-align: center;
+			
+		}
+
+		img{
+			height: 100%;
+		}
+
+		&:hover{
+			background-color: var(--color-light-blue);
+			box-shadow: 0px 6px 15px black;
+		}
+	}
+
+
 }
 
 .socials {

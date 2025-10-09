@@ -19,3 +19,26 @@
 		}
 	}
 }
+
+
+
+.wojak {
+    position: absolute;
+    bottom: 0;
+    z-index: 50;       /* higher than banner/background */
+    width: auto;
+    max-width: 20%;    /* adjust size as needed */
+    pointer-events: none; /* optional: allow clicks through */
+}
+
+/* first .wojak -> lower left */
+.wojak:first-of-type {
+    left: 0;
+    transform: translateX(0);
+}
+
+/* second .wojak -> lower right */
+.wojak:last-of-type {
+    right: 0;
+    transform: translateX(0);
+}
