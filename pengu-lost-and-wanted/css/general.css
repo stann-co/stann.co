@@ -112,9 +112,9 @@ h3{
 	font-family: "Action Man";
 	color: var(--color-blue);
 	font-size: 48px;
-	-webkit-text-stroke: 7px white;
 	paint-order: stroke fill;
 	text-align: center;
+	-webkit-text-stroke: 7px white;
 	text-shadow: 0px 8px 20px black;
 	margin: 0.5em 0;
 }
@@ -122,7 +122,6 @@ h3{
 p {
 	line-height: 1.2em;
 	margin: 1em 0;
-	font-size: 18px;
 }
 
 ul {
@@ -133,6 +132,7 @@ nav {
 	padding: 0;
 	margin: 0;
 	text-align: center;
+	align-items: center;
 	display: inline-flex;
 	a {
 		padding: 1em;
@@ -159,9 +159,10 @@ nav {
 .pengu-slide-bar {
 	cursor: default;
 	text-align: center;
+	display: flex;
 	img {
 		width: 10.5%;
-		margin: 0 0.5%;
+		flex: auto;
 	}
 }
 
@@ -198,8 +199,6 @@ nav {
 			box-shadow: 0px 6px 15px black;
 		}
 	}
-
-
 }
 
 .socials {
@@ -208,4 +207,51 @@ nav {
 		height: 32px;
 		margin: 0 0.5rem;
 	}
+}
+
+/* Override on phone screens */
+@media (max-width: 700px) {
+	*{
+		font-size: 14px;
+	}
+
+	h2{
+		font-size: 20px;
+	}
+
+	h3{
+		font-size: 30px;
+		-webkit-text-stroke: 5px white;
+		text-shadow: 0px 4px 10px black;
+	}
+
+	nav {
+		a {
+			padding: 1em;
+			font-size: 16px;
+		}
+	}
+
+	.contents-inner{
+		padding: 1em;
+	}
+
+	.steam-wishlist{
+
+	text-align: center;
+	width: 100%;
+
+	a{
+		width: 230px;
+		height: 56px;
+		padding: 1em;
+		margin: 5em 0;
+		border-radius: 100px;
+		
+		p{
+			font-size: 20px;
+		}
+	}
+}
+	
 }

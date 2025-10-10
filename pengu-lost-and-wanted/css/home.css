@@ -8,6 +8,9 @@
 
 	h1{
 		place-self: center;
+		img{
+			max-width: 100%;
+		}
 
 	}
 
