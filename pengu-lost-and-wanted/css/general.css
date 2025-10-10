@@ -102,32 +102,6 @@ footer {
 	}
 }
 
-h2{
-	font-size: 32px;
-	margin: 0.5em 0;
-	font-style: italic;
-}
-
-h3{
-	font-family: "Action Man";
-	color: var(--color-blue);
-	font-size: 48px;
-	paint-order: stroke fill;
-	text-align: center;
-	-webkit-text-stroke: 7px white;
-	text-shadow: 0px 8px 20px black;
-	margin: 0.5em 0;
-}
-
-p {
-	line-height: 1.2em;
-	margin: 1em 0;
-}
-
-ul {
-	margin: 2em 0;
-}
-
 nav {
 	padding: 0;
 	margin: 0;
@@ -140,8 +114,53 @@ nav {
 		color: white;
 		font-weight: bold;
 		font-size: 24px;
+
+		&:hover{
+			background-color: var(--color-bg);
+			box-shadow: 0px 6px 15px black;
+		}
 	}
 }
+
+h2{
+	font-size: 32px;
+	margin: 0.5em 0;
+	font-style: italic;
+}
+
+h3{
+    position: relative;
+    font-family: "Action Man";
+    color: var(--color-blue);
+    font-size: 48px;
+    text-align: center;
+    margin: 0.5em 0;
+	z-index: 0;
+
+	&::before{
+		content: attr(data-text);
+		position: absolute;
+		right: 0;
+		left: 0;
+		/* I fucking hate chrome */
+		text-align: center;
+		color: #fff; /* outline color */
+		z-index: -1;
+		pointer-events: none;
+		-webkit-text-stroke: 8px white;
+		text-shadow: 0px 4px 10px black;
+	}
+}
+
+p {
+	line-height: 1.2em;
+	margin: 1em 0;
+}
+
+ul {
+	margin: 2em 0;
+}
+
 
 .contents {
 	max-width: 1000px;
@@ -187,7 +206,6 @@ nav {
 			font-size: 35px;
 			font-weight: bold;
 			text-align: center;
-			
 		}
 
 		img{
@@ -206,6 +224,10 @@ nav {
 		width: 32px;
 		height: 32px;
 		margin: 0 0.5rem;
+		transition: 0.3s;
+		&:hover {
+			scale: 1.2;
+		}
 	}
 }
 
@@ -221,8 +243,11 @@ nav {
 
 	h3{
 		font-size: 30px;
-		-webkit-text-stroke: 5px white;
-		text-shadow: 0px 4px 10px black;
+
+		&::before{
+			-webkit-text-stroke: 5px white;
+			text-shadow: 0px 4px 10px black;
+		}
 	}
 
 	nav {
