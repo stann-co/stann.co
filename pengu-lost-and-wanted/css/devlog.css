@@ -1,0 +1,40 @@
+.contents-inner{
+	section{
+		margin-bottom: 4em;
+		border-top-style: solid;
+
+	}
+}
+
+.image{
+	a {
+		text-decoration: none;
+		img{
+			max-width: 400px;
+			display: inline-block;
+			vertical-align: middle; 
+		}
+	}
+	i{
+		margin-left: 1em;
+		display: inline-block;
+	}
+}
+
+.contents-vertical{
+	position: relative; /* So sidepanel can be absolute inside it */
+}
+
+.sidepanel {
+	height: 250px; /* Specify a height */
+	
+	position: absolute;
+	height: 100%;
+	right: 0;
+	background-color: #111; /* Black*/
+	transition: 0.5s; /* 0.5 second transition effect to slide in the sidepanel */
+	z-index: 1;
+	& > div{
+		margin: 1em;
+	}
+}

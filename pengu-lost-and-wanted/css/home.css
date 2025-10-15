@@ -27,6 +27,31 @@
 	}
 }
 
+h3{
+    position: relative;
+    font-family: "Action Man";
+    color: var(--color-blue);
+    font-size: 48px;
+    text-align: center;
+    margin: 0.5em 0;
+	z-index: 0;
+	font-style: normal;
+
+	&::before{
+		content: attr(data-text);
+		position: absolute;
+		right: 0;
+		left: 0;
+		/* I fucking hate chrome */
+		text-align: center;
+		color: #fff; /* outline color */
+		z-index: -1;
+		pointer-events: none;
+		-webkit-text-stroke: 8px white;
+		text-shadow: 0px 4px 10px black;
+	}
+}
+
 
 
 .wojak {
