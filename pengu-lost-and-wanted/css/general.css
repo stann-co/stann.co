@@ -10,7 +10,7 @@
 /* Hyperlegible Bold */
 @font-face {
 	font-family: "Hyperlegible";
-	src: url("../assets/fonts/Atkinson-Hyperlegible-Bold.woff") format("woff");
+	src: url("../assets/fonts/AtkinsonHyperlegible-Bold.woff") format("woff");
 	font-weight: bold;
 	font-style: normal;
 }
@@ -18,7 +18,7 @@
 /* Hyperlegible Italic */
 @font-face {
 	font-family: "Hyperlegible";
-	src: url("../assets/fonts/Atkinson-Hyperlegible-Italic.woff") format("woff");
+	src: url("../assets/fonts/AtkinsonHyperlegible-Italic.woff") format("woff");
 	font-weight: normal;
 	font-style: italic;
 }
@@ -26,7 +26,7 @@
 /* Hyperlegible Bold Italic */
 @font-face {
 	font-family: "Hyperlegible";
-	src: url("../assets/fonts/Atkinson-Hyperlegible-BoldItalic.woff") format("woff");
+	src: url("../assets/fonts/AtkinsonHyperlegible-BoldItalic.woff") format("woff");
 	font-weight: bold;
 	font-style: italic;
 }

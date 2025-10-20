@@ -1,0 +1,11 @@
+.gallery{
+	position: relative;
+	
+	line-height: 0;
+
+	box {
+		position: absolute;
+
+	} 
+
+}
