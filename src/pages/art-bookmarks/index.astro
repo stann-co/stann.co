@@ -1,0 +1,271 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import Footer from "../../components/Footer.astro";
+import GalleryCard from "../../components/Gallery-Card.astro";
+import Toggle from "../../components/Toggle.astro";
+---
+
+<Layout title="STANN.co — Art Bookmarks">
+	<header>
+		<h1>Art bookmarks</h1>
+		<div class="options">	
+			<Toggle id="hide-explicit" label="Hide Explicit Content" checked />
+			<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
+		</div>
+	</header>
+	<main>
+		<section class="gallery"></section>
+	</main>
+	<Footer />
+	<GalleryCard />
+</Layout>
+
+<style>
+	header {
+		position: fixed;
+		top: 0;
+		z-index: 100;
+		width: 100%;
+		height: 4em;
+		background: #ffffff;
+		background: linear-gradient(0deg,rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 40%);
+		padding: 1em;
+
+		h1 {
+			display: inline-block;
+			margin: 0;
+		}
+
+		.options {
+			display: inline-block;
+			margin-left: 2em;
+		}
+	}
+
+	main {
+		padding: 80px 0 16px; /* account for fixed header */
+	}
+
+	.gallery {
+		margin: 0 auto;
+		padding: 8px;
+	}
+</style>
+
+<script>
+	// renders the bookmarked art as a justified-layout gallery.
+	// data comes from /art-bookmarks/data/bookmarks.clean.json (built by process-bookmarks.mjs).
+	// @ts-ignore: no type declarations for justified-layout
+	import justifiedLayout from "justified-layout";
+
+	// true only on the local dev server (bun run dev); always false in the
+	// production build. gate local-only admin features behind this.
+	const LOCAL_ADMIN = import.meta.env.DEV;
+
+	type Item = {
+		url: string;
+		width: number;
+		height: number;
+		type: string;
+		tweet_url: string;
+		alt: string;
+		nsfw: boolean;
+	};
+
+	// flatten bookmarks → one entry per image, carrying its tweet link + dims.
+	function collectMedia(bookmarks: any[]): Item[] {
+		const items: Item[] = [];
+		for (const b of bookmarks) {
+			for (const m of b.media) {
+				if (!m.url || !m.width || !m.height) continue; // need dims for layout
+				items.push({
+					url: m.url,
+					width: m.width,
+					height: m.height,
+					type: m.type,
+					tweet_url: b.tweet_url,
+					alt: `${b.author.name} (@${b.author.screen_name})`,
+					nsfw: Boolean(m.nsfw),
+				});
+			}
+		}
+		return items;
+	}
+
+	type Box = { width: number; height: number; top: number; left: number };
+
+	let media: Item[] = []; // full set, cached so resize/toggle doesn't re-fetch
+	let view: Item[] = []; // media after the hide-explicit filter — what's laid out
+	let hideExplicit = true; // mirrors the header Toggle (#hide-explicit)
+	let blurExplicit = true; // mirrors the header Toggle (#blur-explicit)
+	let geometry: { boxes: Box[]; containerHeight: number } | null = null;
+	const mounted = new Map<number, HTMLElement>(); // view index → its mounted .box
+
+	const gallery = () => document.querySelector<HTMLElement>(".gallery");
+	const cardTemplate = () => document.querySelector<HTMLTemplateElement>("#gallery-card");
+
+	// rebuild the displayed set from the current filter. nsfw items are dropped
+	// entirely (not just blurred) when hiding explicit content.
+	function applyFilter() {
+		view = hideExplicit ? media.filter((m) => !m.nsfw) : media;
+	}
+
+	// full (re)layout: compute geometry for every item and size the container to
+	// the full height, then window the actual <img> elements. justifiedLayout is
+	// just math over aspect ratios, so doing all ~thousands at once is cheap; the
+	// expensive part (dom + twimg requests) stays bounded by renderWindow().
+	function layout() {
+		const section = gallery();
+		if (!section || !view.length) {
+			geometry = null;
+			for (const el of mounted.values()) el.remove();
+			mounted.clear();
+			if (section) section.style.height = "0px";
+			return;
+		}
+
+		const ratios = view.map((m) => m.width / m.height);
+		const geo = justifiedLayout(ratios, {
+			containerWidth: Math.max(1, section.clientWidth),
+			containerPadding: 0,
+			boxSpacing: 4,
+		});
+		geometry = geo;
+		section.style.height = geo.containerHeight + "px";
+
+		// positions changed — drop every card and re-window from scratch.
+		for (const el of mounted.values()) el.remove();
+		mounted.clear();
+		renderWindow();
+	}
+
+	// mount the cards intersecting the viewport (± one screen of buffer) and
+	// unmount the rest, so only a few screens' worth of images live in the dom
+	// at once. the container's full height keeps the scrollbar honest.
+	function renderWindow() {
+		const section = gallery();
+		if (!section || !geometry) return;
+
+		const sectionTop = section.getBoundingClientRect().top + window.scrollY;
+		const margin = window.innerHeight; // pre-render one screen above & below
+		const top = window.scrollY - sectionTop - margin;
+		const bottom = window.scrollY + window.innerHeight - sectionTop + margin;
+
+		const boxes = geometry.boxes;
+		for (let i = 0; i < boxes.length; i++) {
+			const box = boxes[i];
+			const visible = box.top + box.height >= top && box.top <= bottom;
+			if (visible === mounted.has(i)) continue; // already in the right state
+			if (visible) mounted.set(i, mountCard(i, box));
+			else {
+				mounted.get(i)!.remove();
+				mounted.delete(i);
+			}
+		}
+	}
+
+	// clone the Gallery-Card template for item i, position it, attach to the dom.
+	function mountCard(i: number, box: Box): HTMLElement {
+		const m = view[i];
+		const card = cardTemplate()!.content.cloneNode(true) as DocumentFragment;
+		const boxEl = card.querySelector<HTMLElement>(".box")!;
+		const link = card.querySelector("a")!;
+		const img = card.querySelector("img")!;
+		link.href = m.tweet_url;
+		img.src = m.url;
+		img.alt = m.alt;
+		boxEl.dataset.type = m.type;
+		if (m.nsfw) boxEl.dataset.nsfw = "true";
+		boxEl.style.cssText = `width:${box.width}px;height:${box.height}px;top:${box.top}px;left:${box.left}px`;
+
+		if (LOCAL_ADMIN) {
+			const btn = boxEl.querySelector<HTMLButtonElement>(".nsfw-toggle");
+			if (btn) wireNsfwToggle(btn, boxEl, m);
+		}
+		gallery()!.appendChild(card);
+		return boxEl;
+	}
+
+	// dev-only: toggle the item's nsfw flag and persist it to the data file via
+	// the /__admin/nsfw endpoint (Vite middleware, dev server only). updates the
+	// in-memory item too so the state survives the next resize re-layout.
+	function wireNsfwToggle(btn: HTMLButtonElement, boxEl: HTMLElement, m: Item) {
+		btn.setAttribute("aria-pressed", String(m.nsfw));
+		btn.addEventListener("click", async (e) => {
+			e.preventDefault(); // don't follow the surrounding tweet link
+			e.stopPropagation();
+			const next = !m.nsfw;
+			btn.disabled = true;
+			try {
+				const res = await fetch("/__admin/nsfw", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ url: m.url, nsfw: next }),
+				});
+				const { ok } = await res.json();
+				if (!ok) throw new Error("media not found in data file");
+				m.nsfw = next;
+				boxEl.dataset.nsfw = String(next);
+				btn.setAttribute("aria-pressed", String(next));
+			} catch (err) {
+				console.error("nsfw toggle failed:", err);
+			} finally {
+				btn.disabled = false;
+			}
+		});
+	}
+
+	async function init() {
+		const res = await fetch("/art-bookmarks/data/bookmarks.clean.json");
+		const bookmarks = await res.json();
+		media = collectMedia(bookmarks);
+
+		// the header Toggle drives the hide-explicit filter.
+		const hide_explicit = document.querySelector<HTMLInputElement>("#hide-explicit");
+		if (hide_explicit) {
+			hideExplicit = hide_explicit.checked;
+			hide_explicit.addEventListener("change", () => {
+				hideExplicit = hide_explicit.checked;
+				applyFilter();
+				//window.scrollTo({ top: 0 }); // container height changes; avoid a stranded scroll
+				layout();
+			});
+		}
+
+		// the header Toggle drives the blur-explicit filter.
+		const blur_explicit = document.querySelector<HTMLInputElement>("#blur-explicit");
+		if (blur_explicit) {
+			blurExplicit = blur_explicit.checked;
+			blur_explicit.addEventListener("change", () => {
+				blurExplicit = blur_explicit.checked;
+			});
+		}
+
+		applyFilter();
+		layout();
+	}
+
+	// coalesce scroll/resize bursts to one update per frame. resize needs a full
+	// relayout (container width changed); scroll only re-windows.
+	let queued = false;
+	let needsLayout = false;
+	function schedule(full: boolean) {
+		if (full) needsLayout = true;
+		if (queued) return;
+		queued = true;
+		requestAnimationFrame(() => {
+			queued = false;
+			if (needsLayout) {
+				needsLayout = false;
+				layout();
+			} else {
+				renderWindow();
+			}
+		});
+	}
+
+	// module scripts are deferred, so the dom is ready here.
+	init();
+	window.addEventListener("scroll", () => schedule(false), { passive: true });
+	window.addEventListener("resize", () => schedule(true));
+</script>

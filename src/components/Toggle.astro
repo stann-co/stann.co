@@ -1,0 +1,77 @@
+---
+// Reusable on/off switch (a styled checkbox). The real <input> holds the
+// state, so consumers drive it by id — read `.checked`, listen for "change":
+//   <Toggle id="hide-explicit" label="Hide Explicit Content" checked />
+interface Props {
+	id?: string;
+	name?: string;
+	label?: string;
+	checked?: boolean;
+}
+
+const { id, name, label, checked = false } = Astro.props;
+---
+
+<label class="toggle">
+	{label && <span class="toggle-label">{label}</span>}
+	<span class="switch">
+		<input type="checkbox" id={id} name={name} checked={checked} />
+		<span class="slider"></span>
+	</span>
+</label>
+
+<style>
+	.toggle {
+		display: inline-flex;
+		align-items: center;
+		gap: 8px;
+		cursor: pointer;
+	}
+
+	/* adapted from https://www.w3schools.com/howto/howto_css_switch.asp */
+	.switch {
+		position: relative;
+		display: inline-block;
+		flex: none;
+		width: 40px;
+		height: 20px;
+	}
+
+	.switch input {
+		opacity: 0;
+		width: 0;
+		height: 0;
+	}
+
+	.slider {
+		position: absolute;
+		inset: 0;
+		background-color: #ccc;
+		border-radius: 34px;
+		transition: 0.4s;
+	}
+
+	.slider::before {
+		position: absolute;
+		content: "";
+		height: 16px;
+		width: 16px;
+		left: 2px;
+		bottom: 2px;
+		background-color: white;
+		border-radius: 50%;
+		transition: 0.4s;
+	}
+
+	input:checked + .slider {
+		background-color: #2196f3;
+	}
+
+	input:checked + .slider::before {
+		transform: translateX(20px);
+	}
+
+	input:focus-visible + .slider {
+		box-shadow: 0 0 0 2px #2196f3;
+	}
+</style>
