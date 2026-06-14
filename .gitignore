@@ -1,0 +1,12 @@
+# claude code
+claude.md
+CLAUDE.local.md
+.claude/
+
+# astro / node
+node_modules/
+dist/
+.astro/
+
+# raw x/twitter bookmark export (large); commit public/.../bookmarks.clean.json instead
+data/bookmarks.json

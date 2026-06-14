@@ -1,0 +1,26 @@
+---
+// A single art-bookmarks gallery card.
+//
+// justified-layout computes box geometry from the live container width, so
+// cards are positioned at runtime in the browser — they can't be server-
+// rendered with final coordinates. This component therefore ships a
+// <template> that the art-bookmarks client script clones and fills in per
+// media item, keeping the card markup in one place instead of inline strings.
+//
+// Card styling lives in src/styles/global.css (.gallery .box).
+
+// true only on the local dev server (bun run dev); always false in the
+// production build, so the admin nsfw toggle never ships to stann.co.
+const LOCAL_ADMIN = import.meta.env.DEV;
+---
+
+<template id="gallery-card">
+	<div class="box">
+		<a target="_blank" rel="noopener noreferrer">
+			<img loading="lazy" />
+		</a>
+		{LOCAL_ADMIN && (
+			<button class="nsfw-toggle" type="button" aria-pressed="false">NSFW</button>
+		)}
+	</div>
+</template>
