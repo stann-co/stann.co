@@ -8,7 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "astro": "astro",
-    "data": "node process-bookmarks.mjs"
+    "data": "node process-bookmarks.mjs",
+    "merge": "node merge-bookmarks.mjs"
   },
   "dependencies": {
     "astro": "^5.0.0",
