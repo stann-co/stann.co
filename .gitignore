@@ -10,3 +10,4 @@ dist/
 
 # raw x/twitter bookmark export (large); commit public/.../bookmarks.clean.json instead
 data/bookmarks.json
+bun
