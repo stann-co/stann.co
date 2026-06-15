@@ -1,0 +1,116 @@
+---
+// First-visit age gate. Unlike <Popup>, this is a hard gate: no close button,
+// Escape and backdrop clicks are blocked, and the only ways out are confirming
+// you're 18+ (remembered in localStorage) or leaving the page entirely.
+---
+
+<dialog id="age-gate" class="age-gate">
+	<div class="age-gate-box">
+		<h2 class="age-gate-title">Mature content warning</h2>
+		<div class="age-gate-content">
+			<p>
+				This page is a personal gallery of bookmarked artwork. And contains suggestive and explicit content. That is not suitable for minors.
+			</p>
+			<p>
+				By entering you confirm that you are <strong>18 years of age or older</strong>
+				and are okay with viewing this content. Explicit content is hidden by
+				default and can be toggled in the header.
+			</p>
+		</div>
+		<div class="age-gate-actions">
+			<button type="button" class="age-gate-btn age-gate-enter" data-age-gate-enter>
+				I'm an adult.
+			</button>
+			<button type="button" class="age-gate-btn age-gate-leave" data-age-gate-leave>
+				Im not an adult, or dont wanna see this content.
+			</button>
+		</div>
+	</div>
+</dialog>
+
+<style>
+	.age-gate {
+		border: 0;
+		border-radius: 16px;
+		padding: 0;
+		max-width: min(90vw, 480px);
+		background: #fff;
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+	}
+
+	.age-gate::backdrop {
+		background: rgba(0, 0, 0, 0.75);
+		backdrop-filter: blur(6px);
+	}
+
+	.age-gate-box {
+		padding: 1.75em;
+	}
+
+	.age-gate-title {
+		margin: 0 0 0.75em;
+	}
+
+	.age-gate-content p {
+		margin: 0 0 0.75em;
+		line-height: 1.5;
+	}
+
+	.age-gate-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6em;
+		margin-top: 1.5em;
+	}
+
+	.age-gate-btn {
+		padding: 0.7em 1em;
+		border: 0;
+		border-radius: 10px;
+		font-size: 1em;
+		font-weight: 600;
+		cursor: pointer;
+		transition: filter 0.15s, background 0.15s;
+	}
+
+	.age-gate-enter {
+		background: #111;
+		color: #fff;
+	}
+
+	.age-gate-enter:hover {
+		filter: brightness(1.25);
+	}
+
+	.age-gate-leave {
+		background: #eee;
+		color: #333;
+	}
+
+	.age-gate-leave:hover {
+		background: #ddd;
+	}
+</style>
+
+<script>
+	const KEY = "art-bookmarks:age-confirmed";
+	const dlg = document.querySelector<HTMLDialogElement>("#age-gate");
+
+	if (dlg && localStorage.getItem(KEY) !== "true") {
+		dlg.showModal();
+
+		// hard gate: block Escape (and any other native cancel).
+		dlg.addEventListener("cancel", (e) => e.preventDefault());
+
+		dlg.querySelector("[data-age-gate-enter]")?.addEventListener("click", () => {
+			localStorage.setItem(KEY, "true");
+			dlg.close();
+		});
+
+		dlg.querySelector("[data-age-gate-leave]")?.addEventListener("click", () => {
+			// go back where they came from; if there's no history, send them away.
+			if (history.length > 1) history.back();
+			else window.location.href = "https://www.google.com";
+		});
+	}
+</script>

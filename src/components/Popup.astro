@@ -1,0 +1,107 @@
+---
+// Reusable modal popup built on the native <dialog> element (free Escape-to-close,
+// backdrop, and focus trapping). Drive it by id:
+//   <button data-popup-open="my-popup">Open</button>
+//   <Popup id="my-popup" title="Hello">
+//     <p>Anything you want goes here.</p>
+//   </Popup>
+// Closes via the × button, clicking the backdrop, or pressing Escape.
+interface Props {
+	id: string;
+	title?: string;
+}
+
+const { id, title } = Astro.props;
+---
+
+<dialog id={id} class="popup">
+	<div class="popup-box">
+		<button type="button" class="popup-close" aria-label="Close" data-popup-close>×</button>
+		{title && <h2 class="popup-title">{title}</h2>}
+		<div class="popup-content">
+			<slot />
+		</div>
+	</div>
+</dialog>
+
+<style is:global>
+	.popup-content {
+		h3 {
+			margin-bottom: -0.5em;
+		}
+	}
+</style>
+
+<style>
+	.popup {
+		border: 0;
+		border-radius: 16px;
+		padding: 0;
+		max-width: min(180vw, 880px);
+		background: #fff;
+		box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+	}
+
+	.popup::backdrop {
+		background: rgba(0, 0, 0, 0.45);
+	}
+
+	.popup-box {
+		position: relative;
+		padding: 1.5em;
+	}
+
+	.popup-close {
+		position: absolute;
+		top: 0.5em;
+		right: 0.5em;
+		width: 2em;
+		height: 2em;
+		border: 0;
+		border-radius: 50%;
+		background: transparent;
+		font-size: 1.2em;
+		line-height: 1;
+		color: #555;
+		cursor: pointer;
+		transition: background 0.15s;
+	}
+
+	.popup-close:hover {
+		background: #eee;
+	}
+
+	.popup-title {
+		margin: 0 0 0.75em;
+		padding-right: 1.5em; /* keep clear of the × button */
+	}
+</style>
+
+<script>
+	// One delegated listener set wires every <Popup> on the page (Astro bundles
+	// this script once, not per-instance).
+
+	// open: any element with data-popup-open="<dialog id>"
+	document.addEventListener("click", (e) => {
+		const opener = (e.target as HTMLElement).closest<HTMLElement>("[data-popup-open]");
+		if (opener) {
+			const id = opener.dataset.popupOpen!;
+			document.querySelector<HTMLDialogElement>(`#${id}`)?.showModal();
+		}
+	});
+
+	// close: the × button (or anything with data-popup-close)
+	document.addEventListener("click", (e) => {
+		if ((e.target as HTMLElement).closest("[data-popup-close]")) {
+			(e.target as HTMLElement).closest<HTMLDialogElement>("dialog")?.close();
+		}
+	});
+
+	// close when clicking the backdrop. clicks inside .popup-box stop here, so a
+	// click that reaches the <dialog> itself must be on the backdrop.
+	document.querySelectorAll<HTMLDialogElement>("dialog.popup").forEach((dlg) => {
+		dlg.addEventListener("click", (e) => {
+			if (e.target === dlg) dlg.close();
+		});
+	});
+</script>

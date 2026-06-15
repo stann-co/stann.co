@@ -3,14 +3,74 @@ import Layout from "../../layouts/Layout.astro";
 import Footer from "../../components/Footer.astro";
 import GalleryCard from "../../components/Gallery-Card.astro";
 import Toggle from "../../components/Toggle.astro";
+import Popup from "../../components/Popup.astro";
+import AgeGate from "../../components/AgeGate.astro";
 ---
 
 <Layout title="STANN.co — Art Bookmarks">
+	<AgeGate />
 	<header>
-		<h1>Art bookmarks</h1>
-		<div class="options">	
+		<h1>STANN's art bookmarks</h1>
+
+		<button data-popup-open="info-popup">About & Disclaimer</button>
+
+		<Popup id="info-popup" title="About & Disclaimer">
+			<h3>What is this?</h3>
+			<p>
+				In the simplest terms, you can think of this as kind of personal pinterest gallery.
+				Over the past 3-4 years, i've gotten the habbit of bookmarking any and all art-pieces that i like when browsing Twitter <strong>(tHe eVeRytHIng aPp?!)</strong><br>
+			</p>
+
+			<h3>Why</h3>
+			<p>
+				I like using my twitter bookmarks as reference and inspiration for my own art, but browsing through 1 long ass vertical list in twitters UI sucks ass, so i made this page instead.<br>
+				If you see any art you really like, <br>
+				click on it, see the original:<br>
+				- like,<br>
+				- retweet,<br>
+				- follow them<br>
+				- and leave a comment<br><br>
+
+				to show support!
+			</p>
+
+			<h3>Disclaimer!</h3>
+			<p>
+				This is just a glorified twitter bookmark gallery, and there is no kind of monetization on this page,<br>
+				the page doesn't store a single piece of artwork, but just links to the original tweets where the art was posted.<br>
+				and all traffic/views should automatically go to the original posts/accounts, whenever anyone views the artwork here.<br>
+			</p>
+
+			<h3>Explicit art</h3>
+			<p>
+				this page contains explicit art, and should not be viewed by minors (under 18).<br>
+				I have manually tagged explicit art so it can be filtered, but it's possible that i've missed some! feel free to let me know.
+			</p>
+
+			<h3>Contact</h3>
+			<p>
+				If you have feedback or suggestions (about this page),<br>
+				If your artwork is here and you really really really dont want it to be, (please check disclaimer, but if you still want it gone thats okay)<br>
+				you can message me, on twitter @STANN_co or email me at contact @stann.co
+			</p>
+
+			<h3>whose me?</h3>
+			<p>
+				I'm STANN_co, i do a wee bit of drawing myself, and i really like looking at pretty art and feel inspired *smiles*
+			</p>
+			
+		</Popup>
+		
+		<div class="options">
+			<label class="card-size">
+				Card size
+				<input id="card-size" type="range" min="160" max="560" step="20" value="320" />
+			</label>
 			<Toggle id="hide-explicit" label="Hide Explicit Content" checked />
-			<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
+			{/* shown only when explicit content isn't hidden — toggled client-side (see script). starts hidden since hide-explicit is checked by default. */}
+			<span id="blur-explicit-wrap" hidden>
+				<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
+			</span>
 		</div>
 	</header>
 	<main>
@@ -26,30 +86,163 @@ import Toggle from "../../components/Toggle.astro";
 		top: 0;
 		z-index: 100;
 		width: 100%;
-		height: 4em;
 		background: #ffffff;
 		background: linear-gradient(0deg,rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 1) 40%);
-		padding: 1em;
+		padding: 0.75em 1em;
+
+		/* flow the title + controls in a single wrapping row so the header grows
+		   gracefully on narrow screens instead of overflowing a fixed height.
+		   JS keeps <main>'s top padding synced to the live height. */
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.5em 1em;
 
 		h1 {
-			display: inline-block;
 			margin: 0;
+			font-size: clamp(1.1rem, 4.5vw, 1.6rem);
+		}
+
+		> button[data-popup-open] {
+			flex: none;
+			padding: 0.4em 0.7em;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			background: #fff;
+			font-size: 0.85em;
+			cursor: pointer;
 		}
 
 		.options {
-			display: inline-block;
-			margin-left: 2em;
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.5em 1em;
+			margin-left: auto; /* right-align on wide screens; wraps below on narrow */
+		}
+
+		.card-size {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.4em;
+			font-size: 0.9em;
+			white-space: nowrap;
+		}
+
+		.card-size input {
+			width: 8em;
+			max-width: 40vw;
 		}
 	}
 
 	main {
-		padding: 80px 0 16px; /* account for fixed header */
+		/* fallback; syncHeaderOffset() overrides this with the live header height */
+		padding: 72px 0 16px;
+	}
+</style>
+
+<style is:global>
+
+	/* art-bookmarks gallery (justified-layout) */
+	.gallery {
+		position: relative;
+		line-height: 0;
 	}
 
-	.gallery {
-		margin: 0 auto;
-		padding: 8px;
+	.gallery .box {
+		position: absolute;
+		background: #e7e7e7;
+
+		transition: scale 0.2s ease;
+
+		&:hover {
+			scale: 1.02;
+			z-index: 1;
+		}
 	}
+
+	.gallery .box > a,
+	.gallery .box img,
+	.gallery .box video {
+		display: block;
+		width: 100%;
+		height: 100%;
+	}
+
+	.gallery .box img,
+	.gallery .box video {
+		object-fit: cover;
+	}
+
+	/* badge on non-photo media so videos/gifs are distinguishable */
+	.gallery .box[data-type="video"],
+	.gallery .box[data-type="animated_gif"] {
+		cursor: pointer;
+	}
+
+	/* artist name chip — styled like the nsfw toggle, shown on hover */
+	.gallery .box .artist-label {
+		position: absolute;
+		bottom: 4px;
+		left: 4px;
+		right: 4px;
+		z-index: 1;
+		padding: 3px 6px;
+		border-radius: 4px;
+		font: 600 11px/1 sans-serif;
+		color: #fff;
+		background: rgba(37, 37, 37, 0.801);
+		white-space: nowrap;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		pointer-events: none;
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+
+	.gallery .box:hover .artist-label {
+		opacity: 1;
+	}
+
+	/* touch devices can't hover — keep the artist chip visible so it's not lost */
+	@media (hover: none) {
+		.gallery .box .artist-label {
+			opacity: 1;
+		}
+	}
+
+	/* dev-only nsfw admin toggle (LOCAL_ADMIN) */
+	.gallery .box .nsfw-toggle {
+		position: absolute;
+		top: 4px;
+		left: 4px;
+		z-index: 1;
+		padding: 3px 6px;
+		border: 0;
+		border-radius: 4px;
+		font: 600 11px/1 sans-serif;
+		color: #fff;
+		background: rgba(37, 37, 37, 0.801);
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+
+	.gallery .box:hover .nsfw-toggle {
+		opacity: 1;
+	}
+
+	/* flagged media: keep the toggle lit and blur the preview */
+	.gallery .box[data-nsfw="true"] .nsfw-toggle {
+		background: #e0245e;
+		opacity: 1;
+	}
+
+	.gallery[data-blur="true"] .box[data-nsfw="true"] img,
+	.gallery[data-blur="true"] .box[data-nsfw="true"] video {
+		filter: blur(12px);
+	}
+
 </style>
 
 <script>
@@ -64,15 +257,40 @@ import Toggle from "../../components/Toggle.astro";
 
 	type Item = {
 		url: string;
+		video_url?: string; // present for video / animated_gif — the playable mp4
 		width: number;
 		height: number;
 		type: string;
 		tweet_url: string;
 		alt: string;
+		artist: string;
 		nsfw: boolean;
 	};
 
-	// flatten bookmarks → one entry per image, carrying its tweet link + dims.
+	type Box = { width: number; height: number; top: number; left: number };
+
+	let hideExplicit = false; // drop nsfw items from the view entirely
+	let blurExplicit = false; // blur (rather than drop) nsfw items
+	let targetRowHeight = 320; // card-size slider — justifiedLayout's target row height
+	let media: Item[] = []; // full set, cached so resize/toggle doesn't re-fetch
+	let view: Item[] = []; // media after the hide-explicit filter — what's laid out
+	let geometry: { boxes: Box[]; containerHeight: number } | null = null;
+	const mounted = new Map<number, HTMLElement>(); // view index → its mounted .box
+
+	const gallery = () => document.querySelector<HTMLElement>(".gallery");
+	const cardTemplate = () => document.querySelector<HTMLTemplateElement>("#gallery-card");
+
+	// the header is fixed (out of flow), so <main> needs top padding to clear it.
+	// the header wraps — and thus grows taller — on narrow screens, so measure it
+	// rather than hardcoding. a ResizeObserver (see init) re-runs this on wrap /
+	// font-load / orientation change.
+	function syncHeaderOffset() {
+		const header = document.querySelector<HTMLElement>("header");
+		const main = document.querySelector<HTMLElement>("main");
+		if (header && main) main.style.paddingTop = header.offsetHeight + 12 + "px";
+	}
+
+		// flatten bookmarks → one entry per image, carrying its tweet link + dims.
 	function collectMedia(bookmarks: any[]): Item[] {
 		const items: Item[] = [];
 		for (const b of bookmarks) {
@@ -80,11 +298,13 @@ import Toggle from "../../components/Toggle.astro";
 				if (!m.url || !m.width || !m.height) continue; // need dims for layout
 				items.push({
 					url: m.url,
+					video_url: m.video_url,
 					width: m.width,
 					height: m.height,
 					type: m.type,
 					tweet_url: b.tweet_url,
 					alt: `${b.author.name} (@${b.author.screen_name})`,
+					artist: b.author.name,
 					nsfw: Boolean(m.nsfw),
 				});
 			}
@@ -92,22 +312,24 @@ import Toggle from "../../components/Toggle.astro";
 		return items;
 	}
 
-	type Box = { width: number; height: number; top: number; left: number };
-
-	let media: Item[] = []; // full set, cached so resize/toggle doesn't re-fetch
-	let view: Item[] = []; // media after the hide-explicit filter — what's laid out
-	let hideExplicit = true; // mirrors the header Toggle (#hide-explicit)
-	let blurExplicit = true; // mirrors the header Toggle (#blur-explicit)
-	let geometry: { boxes: Box[]; containerHeight: number } | null = null;
-	const mounted = new Map<number, HTMLElement>(); // view index → its mounted .box
-
-	const gallery = () => document.querySelector<HTMLElement>(".gallery");
-	const cardTemplate = () => document.querySelector<HTMLTemplateElement>("#gallery-card");
-
 	// rebuild the displayed set from the current filter. nsfw items are dropped
 	// entirely (not just blurred) when hiding explicit content.
 	function applyFilter() {
 		view = hideExplicit ? media.filter((m) => !m.nsfw) : media;
+	}
+
+	// gate the css blur on the blur-explicit toggle. the gallery carries a
+	// data-blur flag that the stylesheet keys on, so toggling needs no relayout.
+	function applyBlur() {
+		const section = gallery();
+		if (section) section.dataset.blur = String(blurExplicit);
+	}
+
+	// the blur toggle only makes sense when explicit content is shown — hide it
+	// entirely while hide-explicit is on (nothing to blur).
+	function applyBlurToggleVisibility() {
+		const wrap = document.querySelector<HTMLElement>("#blur-explicit-wrap");
+		if (wrap) wrap.hidden = hideExplicit;
 	}
 
 	// full (re)layout: compute geometry for every item and size the container to
@@ -129,6 +351,7 @@ import Toggle from "../../components/Toggle.astro";
 			containerWidth: Math.max(1, section.clientWidth),
 			containerPadding: 0,
 			boxSpacing: 4,
+			targetRowHeight,
 		});
 		geometry = geo;
 		section.style.height = geo.containerHeight + "px";
@@ -172,12 +395,32 @@ import Toggle from "../../components/Toggle.astro";
 		const link = card.querySelector("a")!;
 		const img = card.querySelector("img")!;
 		link.href = m.tweet_url;
-		img.src = m.url;
-		img.alt = m.alt;
 		boxEl.dataset.type = m.type;
 		if (m.nsfw) boxEl.dataset.nsfw = "true";
+
+		const artistLabel = card.querySelector<HTMLElement>(".artist-label");
+		if (artistLabel) artistLabel.textContent = m.artist;
+
+		if (m.video_url) {
+			// videos & animated gifs play inline: autoplay + loop, and always muted
+			// (browsers only allow unprompted autoplay when muted). playsInline keeps
+			// iOS from kicking into fullscreen. the thumbnail is the poster until ready.
+			const video = document.createElement("video");
+			video.src = m.video_url;
+			video.poster = m.url;
+			video.muted = true;
+			video.loop = true;
+			video.autoplay = true;
+			video.playsInline = true;
+			video.setAttribute("aria-label", m.alt);
+			img.replaceWith(video);
+		} else {
+			img.src = m.url;
+			img.alt = m.alt;
+		}
 		boxEl.style.cssText = `width:${box.width}px;height:${box.height}px;top:${box.top}px;left:${box.left}px`;
 
+		//Only in local dev
 		if (LOCAL_ADMIN) {
 			const btn = boxEl.querySelector<HTMLButtonElement>(".nsfw-toggle");
 			if (btn) wireNsfwToggle(btn, boxEl, m);
@@ -224,8 +467,10 @@ import Toggle from "../../components/Toggle.astro";
 		const hide_explicit = document.querySelector<HTMLInputElement>("#hide-explicit");
 		if (hide_explicit) {
 			hideExplicit = hide_explicit.checked;
+			applyBlurToggleVisibility();
 			hide_explicit.addEventListener("change", () => {
 				hideExplicit = hide_explicit.checked;
+				applyBlurToggleVisibility();
 				applyFilter();
 				//window.scrollTo({ top: 0 }); // container height changes; avoid a stranded scroll
 				layout();
@@ -236,9 +481,35 @@ import Toggle from "../../components/Toggle.astro";
 		const blur_explicit = document.querySelector<HTMLInputElement>("#blur-explicit");
 		if (blur_explicit) {
 			blurExplicit = blur_explicit.checked;
+			applyBlur();
 			blur_explicit.addEventListener("change", () => {
 				blurExplicit = blur_explicit.checked;
+				applyBlur();
 			});
+		}
+
+		// the card-size slider drives justifiedLayout's target row height. bigger
+		// value → taller rows → fewer, larger cards. each change is a full relayout.
+		const card_size = document.querySelector<HTMLInputElement>("#card-size");
+		if (card_size) {
+			// smaller rows by default on phones so more than one image fits per row
+			if (window.innerWidth < 600) card_size.value = "200";
+			targetRowHeight = Number(card_size.value);
+			card_size.addEventListener("input", () => {
+				targetRowHeight = Number(card_size.value);
+				layout();
+			});
+		}
+
+		// keep <main>'s offset matched to the header as it wraps / fonts load, then
+		// re-window since the gallery's top shifts when the padding changes.
+		syncHeaderOffset();
+		const header = document.querySelector<HTMLElement>("header");
+		if (header) {
+			new ResizeObserver(() => {
+				syncHeaderOffset();
+				renderWindow();
+			}).observe(header);
 		}
 
 		applyFilter();

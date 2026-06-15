@@ -13,6 +13,10 @@ const { title = "STANN.co" } = Astro.props;
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<!-- video.twimg.com 403s any request with a Referer header (hotlink
+		     protection), so suppress the referrer page-wide. The image host and
+		     Google Fonts both load fine without one. -->
+		<meta name="referrer" content="no-referrer" />
 		<title>{title}</title>
 
 		<!-- Google Fonts: Atkinson Hyperlegible Next -->
