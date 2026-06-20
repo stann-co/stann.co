@@ -18,10 +18,22 @@ const newestFirst = (a, b) =>
   new Date(a.bookmark_date || a.tweeted_at || 0);
 
 // collect every bookmark from every json file in "new bookmarks/".
-const files = (await readdir(NEW_DIR)).filter((f) => f.endsWith(".json"));
+const allFiles = (await readdir(NEW_DIR)).filter((f) => f.endsWith(".json"));
+const files = []; // parsed cleanly — these get merged & deleted
+const skipped = []; // empty/invalid — left in place for inspection
 const incoming = [];
-for (const f of files) {
-  const arr = JSON.parse(await readFile(join(NEW_DIR, f), "utf8"));
+for (const f of allFiles) {
+  const text = (await readFile(join(NEW_DIR, f), "utf8")).trim();
+  let arr;
+  try {
+    if (!text) throw new Error("empty file");
+    arr = JSON.parse(text);
+    if (!Array.isArray(arr)) throw new Error("not a JSON array");
+  } catch (err) {
+    skipped.push(`${f} (${err.message})`);
+    continue;
+  }
+  files.push(f);
   incoming.push(...arr);
 }
 incoming.sort(newestFirst);
@@ -43,3 +55,6 @@ for (const f of files) {
 console.log(`files:    ${files.length} merged & deleted (${incoming.length} bookmarks)`);
 console.log(`new:      ${fresh.length} merged (${incoming.length - fresh.length} dupes skipped)`);
 console.log(`feed:     ${existing.length} → ${merged.length} → ${FEED}`);
+if (skipped.length) {
+  console.log(`skipped:  ${skipped.length} left in place → ${skipped.join(", ")}`);
+}
