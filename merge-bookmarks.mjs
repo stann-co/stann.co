@@ -44,6 +44,13 @@ const existing = JSON.parse(await readFile(FEED, "utf8"));
 const seen = new Set(existing.map((b) => b.tweet_url));
 const fresh = incoming.filter((b) => !seen.has(b.tweet_url));
 
+// newly added bookmarks default to reviewed ("seen") — only the existing backlog
+// needs the manual tagging pass, so freshly-merged posts shouldn't show up in the
+// "hide reviewed" queue. (the flag is dev-only; it has no effect in production.)
+for (const b of fresh) {
+  for (const m of b.media ?? []) m.checked = true;
+}
+
 const merged = [...fresh, ...existing];
 await writeFile(FEED, JSON.stringify(merged), "utf8");
 

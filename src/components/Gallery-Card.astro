@@ -10,8 +10,15 @@
 // Card styling lives in src/styles/global.css (.gallery .box).
 
 // true only on the local dev server (bun run dev); always false in the
-// production build, so the admin nsfw toggle never ships to stann.co.
+// production build, so the admin tag toggles never ship to stann.co.
 const LOCAL_ADMIN = import.meta.env.DEV;
+
+// category/sorting tags applied to media in dev mode. Keep in sync with the
+// TAGS list in astro.config.mjs (which validates + persists them).
+// ("animated" and "painting" aren't here — animated is derived from a media
+// item's type (video/animated_gif), and painting is the implicit default for
+// any item with no tags, so neither is ever applied by hand.)
+const TAGS = ["sketch", "3d", "pixelart", "irl"];
 ---
 
 <template id="gallery-card">
@@ -21,7 +28,16 @@ const LOCAL_ADMIN = import.meta.env.DEV;
 		</a>
 		<span class="artist-label"></span>
 		{LOCAL_ADMIN && (
-			<button class="nsfw-toggle" type="button" aria-pressed="false">NSFW</button>
+			<Fragment>
+				<div class="admin-tags">
+					<button class="checked-toggle" type="button" aria-pressed="false">✓ seen</button>
+					<button class="nsfw-toggle" type="button" aria-pressed="false">NSFW</button>
+					{TAGS.map((t) => (
+						<button class="tag-toggle" data-tag={t} type="button" aria-pressed="false">{t}</button>
+					))}
+				</div>
+				<button class="delete-post" type="button" title="Delete this post">✕</button>
+			</Fragment>
 		)}
 	</div>
 </template>

@@ -7,6 +7,33 @@ body {
 	font-optical-sizing: auto;
 }
 
+/* The gallery is extremely tall, so give the page scrollbar a wider, always
+   visible drag target — the default thin/overlay bar is fiddly to grab,
+   especially on touch. */
+html {
+	scrollbar-width: auto; /* Firefox: wider than the default 'thin' overlay */
+	scrollbar-color: rgba(0, 0, 0, 0.4) transparent;
+}
+
+::-webkit-scrollbar {
+	width: 14px;
+	height: 14px;
+}
+
+::-webkit-scrollbar-thumb {
+	background: rgba(0, 0, 0, 0.4);
+	border-radius: 8px;
+	/* transparent border + background-clip leaves a little breathing room
+	   around the thumb so it reads as a rounded pill */
+	border: 3px solid transparent;
+	background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+	background: rgba(0, 0, 0, 0.6);
+	background-clip: content-box;
+}
+
 .logo {
 	font-weight: 700;
 	font-style: normal;

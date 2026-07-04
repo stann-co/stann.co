@@ -5,6 +5,24 @@ import GalleryCard from "../../components/Gallery-Card.astro";
 import Toggle from "../../components/Toggle.astro";
 import Popup from "../../components/Popup.astro";
 import AgeGate from "../../components/AgeGate.astro";
+
+// true only on the local dev server — gates the review-progress tracking UI so
+// it never ships to stann.co (matches the dev-only admin toggles on each card).
+const LOCAL_ADMIN = import.meta.env.DEV;
+
+// category filters shown as header checkboxes (all on by default). These are the
+// manual tags applied in dev mode (see Gallery-Card.astro) plus two derived
+// categories that are never stored: "animated" (media type is video/animated_gif)
+// and "painting" (the implicit default for any item with no tags of its own).
+// The client script keys off data-tag-filter to filter the gallery.
+const TAG_FILTERS = [
+	{ tag: "sketch", label: "Sketch" },
+	{ tag: "painting", label: "Painting" },
+	{ tag: "3d", label: "3D" },
+	{ tag: "pixelart", label: "Pixel art" },
+	{ tag: "animated", label: "Animated" },
+	{ tag: "irl", label: "IRL" },
+];
 ---
 
 <Layout title="STANN.co — Art Bookmarks">
@@ -47,6 +65,13 @@ import AgeGate from "../../components/AgeGate.astro";
 				I have manually tagged explicit art so it can be filtered, but it's possible that i've missed some! feel free to let me know.
 			</p>
 
+			<h3>Tags</h3>
+			<p>
+				Tags are work in progress, because they're being added manually, and there's over 9000 posts.<br>
+				God damn....
+				
+			</p>
+
 			<h3>Contact</h3>
 			<p>
 				If you have feedback or suggestions (about this page),<br>
@@ -71,6 +96,27 @@ import AgeGate from "../../components/AgeGate.astro";
 			<span id="blur-explicit-wrap" hidden>
 				<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
 			</span>
+
+			{/* category filters — all checked by default; unchecking one hides that
+			    category (untagged art is never hidden). see script's applyFilter(). */}
+			<div class="tag-filters">
+				<span class="tag-filters-label">Show</span>
+				{TAG_FILTERS.map(({ tag, label }) => (
+					<label>
+						<input type="checkbox" data-tag-filter={tag} checked />
+						{label}
+					</label>
+				))}
+			</div>
+
+			{/* dev-only review tracking for the big tagging pass (see script). */}
+			{LOCAL_ADMIN && (
+				<label class="review-filter">
+					<input type="checkbox" id="hide-checked" />
+					Hide reviewed
+					<span id="review-progress"></span>
+				</label>
+			)}
 		</div>
 	</header>
 	<main>
@@ -132,6 +178,72 @@ import AgeGate from "../../components/AgeGate.astro";
 		.card-size input {
 			width: 8em;
 			max-width: 40vw;
+		}
+
+		.tag-filters {
+			display: inline-flex;
+			flex-wrap: wrap;
+			align-items: center;
+			gap: 0.2em 0.7em;
+			padding: 0.3em 0.6em;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			font-size: 0.85em;
+		}
+
+		.tag-filters-label {
+			font-weight: 700;
+			color: #666;
+		}
+
+		.tag-filters label {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.3em;
+			cursor: pointer;
+			white-space: nowrap;
+		}
+
+		.tag-filters input {
+			cursor: pointer;
+		}
+
+		.review-filter {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.4em;
+			font-size: 0.85em;
+			white-space: nowrap;
+			cursor: pointer;
+		}
+
+		.review-filter #review-progress {
+			color: #888;
+			font-variant-numeric: tabular-nums;
+		}
+	}
+
+	/* narrow screens: the title + About + controls all cramming into one
+	   wrapping row reads as scrunched, so give the title its own line and let
+	   the controls span the full width below it with a bit more breathing room. */
+	@media (max-width: 600px) {
+		header {
+			padding: 0.6em 0.9em;
+			gap: 0.55em 0.75em;
+		}
+
+		header h1 {
+			flex-basis: 100%; /* title on its own row */
+		}
+
+		header .options {
+			width: 100%;
+			margin-left: 0; /* fill the row instead of right-aligning */
+			justify-content: space-between;
+		}
+
+		header .card-size input {
+			max-width: 55vw; /* slider can breathe now that it's on its own row */
 		}
 	}
 
@@ -211,12 +323,26 @@ import AgeGate from "../../components/AgeGate.astro";
 		}
 	}
 
-	/* dev-only nsfw admin toggle (LOCAL_ADMIN) */
-	.gallery .box .nsfw-toggle {
+	/* dev-only admin toggles (LOCAL_ADMIN): nsfw flag + category tags. shown on
+	   hover so they don't clutter the gallery while browsing. */
+	.gallery .box .admin-tags {
 		position: absolute;
 		top: 4px;
 		left: 4px;
+		right: 34px; /* leave the top-right corner clear for the delete button */
 		z-index: 1;
+		display: flex;
+		flex-wrap: wrap;
+		gap: 3px;
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+
+	.gallery .box:hover .admin-tags {
+		opacity: 1;
+	}
+
+	.gallery .box .admin-tags button {
 		padding: 3px 6px;
 		border: 0;
 		border-radius: 4px;
@@ -224,18 +350,60 @@ import AgeGate from "../../components/AgeGate.astro";
 		color: #fff;
 		background: rgba(37, 37, 37, 0.801);
 		cursor: pointer;
-		opacity: 0;
-		transition: opacity 0.12s;
 	}
 
-	.gallery .box:hover .nsfw-toggle {
+	/* an applied tag stays highlighted so its state is visible on hover */
+	.gallery .box .admin-tags button.tag-toggle[aria-pressed="true"] {
+		background: #1d9bf0;
+	}
+
+	/* the reviewed ("seen") toggle goes green once a post has been looked at */
+	.gallery .box .admin-tags button.checked-toggle[aria-pressed="true"] {
+		background: #17a34a;
+	}
+
+	/* reviewed cards fade their media so progress is visible at a glance while
+	   scrolling; the admin buttons stay crisp (only the img/video is dimmed).
+	   data-checked is only ever set in dev, so production is unaffected. */
+	.gallery .box[data-checked="true"] img,
+	.gallery .box[data-checked="true"] video {
+		opacity: 0.3;
+	}
+
+	/* flagged media: keep the controls visible even without hover, light the
+	   nsfw button red, and blur the preview */
+	.gallery .box[data-nsfw="true"] .admin-tags {
 		opacity: 1;
 	}
 
-	/* flagged media: keep the toggle lit and blur the preview */
 	.gallery .box[data-nsfw="true"] .nsfw-toggle {
 		background: #e0245e;
+	}
+
+	/* dev-only per-post delete (LOCAL_ADMIN), pinned to the opposite corner from
+	   the tag row. shown on hover; turns red on hover to read as destructive. */
+	.gallery .box .delete-post {
+		position: absolute;
+		top: 4px;
+		right: 4px;
+		z-index: 2; /* above .admin-tags so it's always clickable */
+		padding: 3px 6px;
+		border: 0;
+		border-radius: 4px;
+		font: 600 12px/1 sans-serif;
+		color: #fff;
+		background: rgba(37, 37, 37, 0.801);
+		cursor: pointer;
+		opacity: 0;
+		transition: opacity 0.12s, background 0.12s;
+	}
+
+	.gallery .box:hover .delete-post {
 		opacity: 1;
+	}
+
+	.gallery .box .delete-post:hover {
+		background: #e0245e;
 	}
 
 	.gallery[data-blur="true"] .box[data-nsfw="true"] img,
@@ -265,12 +433,16 @@ import AgeGate from "../../components/AgeGate.astro";
 		alt: string;
 		artist: string;
 		nsfw: boolean;
+		tags: string[]; // category/sorting tags (sketch, 3d, pixelart, …)
+		checked: boolean; // dev review flag — "I've already looked at this post"
 	};
 
 	type Box = { width: number; height: number; top: number; left: number };
 
 	let hideExplicit = false; // drop nsfw items from the view entirely
 	let blurExplicit = false; // blur (rather than drop) nsfw items
+	let activeTags = new Set<string>(); // category filters currently checked "on"
+	let hideChecked = false; // dev: drop already-reviewed posts from the view
 	let targetRowHeight = 320; // card-size slider — justifiedLayout's target row height
 	let media: Item[] = []; // full set, cached so resize/toggle doesn't re-fetch
 	let view: Item[] = []; // media after the hide-explicit filter — what's laid out
@@ -306,16 +478,35 @@ import AgeGate from "../../components/AgeGate.astro";
 					alt: `${b.author.name} (@${b.author.screen_name})`,
 					artist: b.author.name,
 					nsfw: Boolean(m.nsfw),
+					tags: Array.isArray(m.tags) ? m.tags : [],
+					checked: Boolean(m.checked),
 				});
 			}
 		}
 		return items;
 	}
 
-	// rebuild the displayed set from the current filter. nsfw items are dropped
-	// entirely (not just blurred) when hiding explicit content.
+	// an item's effective category tags: its stored tags, plus a derived "animated"
+	// for video / animated_gif media, and "painting" as the implicit default when
+	// an item has no category of its own (paintings are too plentiful to tag by
+	// hand). neither derived tag is ever stored — see Gallery-Card.
+	function effectiveTags(m: Item): string[] {
+		const t = m.tags.slice();
+		if (m.type === "video" || m.type === "animated_gif") t.push("animated");
+		if (t.length === 0) t.push("painting");
+		return t;
+	}
+
+	// rebuild the displayed set from the current filters. nsfw items are dropped
+	// entirely (not just blurred) when hiding explicit content. category filters
+	// are subtractive: an item is hidden if it carries a tag whose checkbox is
+	// off, so unchecking "sketch" removes sketches while untagged art always shows.
 	function applyFilter() {
-		view = hideExplicit ? media.filter((m) => !m.nsfw) : media;
+		view = media.filter((m) => {
+			if (hideExplicit && m.nsfw) return false;
+			if (hideChecked && m.checked) return false;
+			return effectiveTags(m).every((t) => activeTags.has(t));
+		});
 	}
 
 	// gate the css blur on the blur-explicit toggle. the gallery carries a
@@ -424,6 +615,14 @@ import AgeGate from "../../components/AgeGate.astro";
 		if (LOCAL_ADMIN) {
 			const btn = boxEl.querySelector<HTMLButtonElement>(".nsfw-toggle");
 			if (btn) wireNsfwToggle(btn, boxEl, m);
+			boxEl
+				.querySelectorAll<HTMLButtonElement>(".tag-toggle")
+				.forEach((tagBtn) => wireTagToggle(tagBtn, m));
+			const del = boxEl.querySelector<HTMLButtonElement>(".delete-post");
+			if (del) wireDeleteButton(del, m);
+			if (m.checked) boxEl.dataset.checked = "true"; // dev-only dim
+			const chk = boxEl.querySelector<HTMLButtonElement>(".checked-toggle");
+			if (chk) wireCheckedToggle(chk, boxEl, m);
 		}
 		gallery()!.appendChild(card);
 		return boxEl;
@@ -456,6 +655,105 @@ import AgeGate from "../../components/AgeGate.astro";
 				btn.disabled = false;
 			}
 		});
+	}
+
+	// dev-only: toggle a category tag on the item and persist it via the
+	// /__admin/tag endpoint (see astro.config.mjs). mirrors wireNsfwToggle, but
+	// tags live in an array so several can apply to one item. keeps the in-memory
+	// item in sync so the state survives the next resize re-layout.
+	function wireTagToggle(btn: HTMLButtonElement, m: Item) {
+		const tag = btn.dataset.tag;
+		if (!tag) return;
+		btn.setAttribute("aria-pressed", String(m.tags.includes(tag)));
+		btn.addEventListener("click", async (e) => {
+			e.preventDefault(); // don't follow the surrounding tweet link
+			e.stopPropagation();
+			const on = !m.tags.includes(tag);
+			btn.disabled = true;
+			try {
+				const res = await fetch("/__admin/tag", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ url: m.url, tag, on }),
+				});
+				const { ok } = await res.json();
+				if (!ok) throw new Error("media not found in data file");
+				if (on) m.tags.push(tag);
+				else m.tags = m.tags.filter((t) => t !== tag);
+				btn.setAttribute("aria-pressed", String(on));
+			} catch (err) {
+				console.error("tag toggle failed:", err);
+			} finally {
+				btn.disabled = false;
+			}
+		});
+	}
+
+	// dev-only: delete a post after a confirm prompt. removes the media item from
+	// bookmarks.clean.json via /__admin/delete (see astro.config.mjs), then drops
+	// it from the in-memory set and relayouts so the gallery reflows without a
+	// reload. on success the card is torn down by layout(), so no need to re-enable.
+	function wireDeleteButton(btn: HTMLButtonElement, m: Item) {
+		btn.addEventListener("click", async (e) => {
+			e.preventDefault(); // don't follow the surrounding tweet link
+			e.stopPropagation();
+			if (!confirm(`Delete this post by ${m.artist}?\nThis removes it from bookmarks.clean.json.`)) return;
+			btn.disabled = true;
+			try {
+				const res = await fetch("/__admin/delete", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ url: m.url }),
+				});
+				const { ok } = await res.json();
+				if (!ok) throw new Error("media not found in data file");
+				media = media.filter((x) => x !== m);
+				applyFilter();
+				layout();
+			} catch (err) {
+				console.error("delete failed:", err);
+				btn.disabled = false;
+			}
+		});
+	}
+
+	// dev-only: mark a post reviewed so it can be filtered out of a big tagging
+	// pass. persists via /__admin/checked, dims the card, and updates the counter.
+	// doesn't relayout on toggle (that would shift everything under the cursor) —
+	// the item drops out next time the view is filtered (e.g. Hide reviewed).
+	function wireCheckedToggle(btn: HTMLButtonElement, boxEl: HTMLElement, m: Item) {
+		btn.setAttribute("aria-pressed", String(m.checked));
+		btn.addEventListener("click", async (e) => {
+			e.preventDefault(); // don't follow the surrounding tweet link
+			e.stopPropagation();
+			const next = !m.checked;
+			btn.disabled = true;
+			try {
+				const res = await fetch("/__admin/checked", {
+					method: "POST",
+					headers: { "content-type": "application/json" },
+					body: JSON.stringify({ url: m.url, checked: next }),
+				});
+				const { ok } = await res.json();
+				if (!ok) throw new Error("media not found in data file");
+				m.checked = next;
+				boxEl.dataset.checked = String(next);
+				btn.setAttribute("aria-pressed", String(next));
+				updateProgress();
+			} catch (err) {
+				console.error("checked toggle failed:", err);
+			} finally {
+				btn.disabled = false;
+			}
+		});
+	}
+
+	// dev-only: show how far the review pass has gotten ("N / total reviewed").
+	function updateProgress() {
+		const el = document.querySelector("#review-progress");
+		if (!el) return;
+		const done = media.reduce((n, m) => n + (m.checked ? 1 : 0), 0);
+		el.textContent = `${done.toLocaleString()} / ${media.length.toLocaleString()} reviewed`;
 	}
 
 	async function init() {
@@ -500,6 +798,37 @@ import AgeGate from "../../components/AgeGate.astro";
 				layout();
 			});
 		}
+
+		// category filter checkboxes (all checked by default). rebuild activeTags
+		// from the live checkbox state, then relayout on any change.
+		const tagFilters = document.querySelectorAll<HTMLInputElement>("[data-tag-filter]");
+		const readActiveTags = () => {
+			activeTags = new Set<string>();
+			tagFilters.forEach((cb) => {
+				if (cb.checked && cb.dataset.tagFilter) activeTags.add(cb.dataset.tagFilter);
+			});
+		};
+		readActiveTags();
+		tagFilters.forEach((cb) =>
+			cb.addEventListener("change", () => {
+				readActiveTags();
+				applyFilter();
+				layout();
+			}),
+		);
+
+		// dev-only: "Hide reviewed" drops already-checked posts, and the counter
+		// tracks progress through the pass.
+		const hide_checked = document.querySelector<HTMLInputElement>("#hide-checked");
+		if (hide_checked) {
+			hideChecked = hide_checked.checked;
+			hide_checked.addEventListener("change", () => {
+				hideChecked = hide_checked.checked;
+				applyFilter();
+				layout();
+			});
+		}
+		updateProgress();
 
 		// keep <main>'s offset matched to the header as it wraps / fonts load, then
 		// re-window since the gallery's top shifts when the padding changes.
