@@ -11,16 +11,17 @@ import AgeGate from "../../components/AgeGate.astro";
 const LOCAL_ADMIN = import.meta.env.DEV;
 
 // category filters shown as header checkboxes (all on by default). These are the
-// manual tags applied in dev mode (see Gallery-Card.astro) plus two derived
-// categories that are never stored: "animated" (media type is video/animated_gif)
-// and "painting" (the implicit default for any item with no tags of its own).
-// The client script keys off data-tag-filter to filter the gallery.
+// manual tags applied in dev mode (see Gallery-Card.astro) plus "painting", the
+// implicit default for any item with no tags of its own. "animated" is NOT here:
+// it's an orthogonal modifier (the "Only animated" toggle), so it can intersect
+// with a category — e.g. only-animated + sketch = animated sketches, rather than
+// hiding everything that is either a sketch or animated. The client script keys
+// off data-tag-filter to filter the gallery.
 const TAG_FILTERS = [
 	{ tag: "sketch", label: "Sketch" },
 	{ tag: "painting", label: "Painting" },
 	{ tag: "3d", label: "3D" },
 	{ tag: "pixelart", label: "Pixel art" },
-	{ tag: "animated", label: "Animated" },
 	{ tag: "irl", label: "IRL" },
 ];
 ---
@@ -108,6 +109,13 @@ const TAG_FILTERS = [
 					</label>
 				))}
 			</div>
+
+			{/* modifier: restrict to moving media (video / gif). ANDs with the
+			    category checkboxes, so it can isolate e.g. animated sketches. */}
+			<label class="only-animated">
+				<input type="checkbox" id="only-animated" />
+				Only animated
+			</label>
 
 			{/* dev-only review tracking for the big tagging pass (see script). */}
 			{LOCAL_ADMIN && (
@@ -205,6 +213,15 @@ const TAG_FILTERS = [
 		}
 
 		.tag-filters input {
+			cursor: pointer;
+		}
+
+		.only-animated {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.4em;
+			font-size: 0.85em;
+			white-space: nowrap;
 			cursor: pointer;
 		}
 
@@ -442,6 +459,7 @@ const TAG_FILTERS = [
 	let hideExplicit = false; // drop nsfw items from the view entirely
 	let blurExplicit = false; // blur (rather than drop) nsfw items
 	let activeTags = new Set<string>(); // category filters currently checked "on"
+	let onlyAnimated = false; // restrict the view to video / animated_gif media
 	let hideChecked = false; // dev: drop already-reviewed posts from the view
 	let targetRowHeight = 320; // card-size slider — justifiedLayout's target row height
 	let media: Item[] = []; // full set, cached so resize/toggle doesn't re-fetch
@@ -486,26 +504,32 @@ const TAG_FILTERS = [
 		return items;
 	}
 
-	// an item's effective category tags: its stored tags, plus a derived "animated"
-	// for video / animated_gif media, and "painting" as the implicit default when
-	// an item has no category of its own (paintings are too plentiful to tag by
-	// hand). neither derived tag is ever stored — see Gallery-Card.
-	function effectiveTags(m: Item): string[] {
+	// moving media — the "Only animated" modifier keys off this.
+	function isAnimated(m: Item): boolean {
+		return m.type === "video" || m.type === "animated_gif";
+	}
+
+	// an item's category tags: its stored tags, with "painting" as the implicit
+	// default when it has no category of its own (paintings are too plentiful to
+	// tag by hand). the fallback is never stored — see Gallery-Card. note animated
+	// is NOT a category here; it's handled separately as a modifier (see below).
+	function categoryTags(m: Item): string[] {
 		const t = m.tags.slice();
-		if (m.type === "video" || m.type === "animated_gif") t.push("animated");
 		if (t.length === 0) t.push("painting");
 		return t;
 	}
 
 	// rebuild the displayed set from the current filters. nsfw items are dropped
 	// entirely (not just blurred) when hiding explicit content. category filters
-	// are subtractive: an item is hidden if it carries a tag whose checkbox is
-	// off, so unchecking "sketch" removes sketches while untagged art always shows.
+	// are subtractive: an item is hidden if it carries a tag whose checkbox is off,
+	// so unchecking "sketch" removes sketches. "Only animated" is an intersecting
+	// modifier that ANDs on top, so it can isolate e.g. animated sketches.
 	function applyFilter() {
 		view = media.filter((m) => {
 			if (hideExplicit && m.nsfw) return false;
 			if (hideChecked && m.checked) return false;
-			return effectiveTags(m).every((t) => activeTags.has(t));
+			if (onlyAnimated && !isAnimated(m)) return false;
+			return categoryTags(m).every((t) => activeTags.has(t));
 		});
 	}
 
@@ -816,6 +840,18 @@ const TAG_FILTERS = [
 				layout();
 			}),
 		);
+
+		// "Only animated" modifier — restricts the view to moving media, ANDed with
+		// the category checkboxes above.
+		const only_animated = document.querySelector<HTMLInputElement>("#only-animated");
+		if (only_animated) {
+			onlyAnimated = only_animated.checked;
+			only_animated.addEventListener("change", () => {
+				onlyAnimated = only_animated.checked;
+				applyFilter();
+				layout();
+			});
+		}
 
 		// dev-only: "Hide reviewed" drops already-checked posts, and the counter
 		// tracks progress through the pass.

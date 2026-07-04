@@ -12,7 +12,7 @@
     "merge": "node merge-bookmarks.mjs"
   },
   "dependencies": {
-    "astro": "^5.0.0",
+    "astro": "^5.18.2",
     "justified-layout": "^4.1.0"
   }
 }
