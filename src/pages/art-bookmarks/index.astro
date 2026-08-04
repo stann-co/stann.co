@@ -29,10 +29,71 @@ const TAG_FILTERS = [
 <Layout title="STANN.co — Art Bookmarks">
 	<AgeGate />
 	<header>
-		<h1>STANN's art bookmarks</h1>
+		<div class="header-bar">
+			<h1>STANN's art bookmarks</h1>
 
-		<button data-popup-open="info-popup">About & Disclaimer</button>
+			{/* mobile-only: folds the controls below away so the header doesn't eat
+			    the screen on a phone. hidden on wide screens via CSS (header-controls
+			    is always shown there). */}
+			<button
+				type="button"
+				id="header-toggle"
+				class="header-toggle"
+				aria-expanded="false"
+				aria-controls="header-controls"
+			>
+				<span class="header-toggle-icon" aria-hidden="true">&#9662;</span>
+				Filters
+			</button>
+		</div>
 
+		<div class="header-controls" id="header-controls">
+			<button data-popup-open="info-popup">About & Disclaimer</button>
+
+			<div class="options">
+				<label class="card-size">
+					Card size
+					<input id="card-size" type="range" min="160" max="560" step="20" value="320" />
+				</label>
+				<Toggle id="hide-explicit" label="Hide Explicit Content" checked />
+				{/* shown only when explicit content isn't hidden — toggled client-side (see script). starts hidden since hide-explicit is checked by default. */}
+				<span id="blur-explicit-wrap" hidden>
+					<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
+				</span>
+
+				{/* category filters — all checked by default; unchecking one hides that
+				    category (untagged art is never hidden). see script's applyFilter(). */}
+				<div class="tag-filters">
+					<span class="tag-filters-label">Show</span>
+					{TAG_FILTERS.map(({ tag, label }) => (
+						<label>
+							<input type="checkbox" data-tag-filter={tag} checked />
+							{label}
+						</label>
+					))}
+				</div>
+
+				{/* modifier: restrict to moving media (video / gif). ANDs with the
+				    category checkboxes, so it can isolate e.g. animated sketches. */}
+				<label class="only-animated">
+					<input type="checkbox" id="only-animated" />
+					Only animated
+				</label>
+
+				{/* dev-only review tracking for the big tagging pass (see script). */}
+				{LOCAL_ADMIN && (
+					<label class="review-filter">
+						<input type="checkbox" id="hide-checked" />
+						Hide reviewed
+						<span id="review-progress"></span>
+					</label>
+				)}
+			</div>
+		</div>
+
+		{/* not inside .header-controls: a display:none ancestor (the collapsed
+		    state on mobile) would stop showModal() from promoting this to the
+		    top layer, so the dialog stays a direct child of header. */}
 		<Popup id="info-popup" title="About & Disclaimer">
 			<h3>What is this?</h3>
 			<p>
@@ -86,46 +147,6 @@ const TAG_FILTERS = [
 			</p>
 			
 		</Popup>
-		
-		<div class="options">
-			<label class="card-size">
-				Card size
-				<input id="card-size" type="range" min="160" max="560" step="20" value="320" />
-			</label>
-			<Toggle id="hide-explicit" label="Hide Explicit Content" checked />
-			{/* shown only when explicit content isn't hidden — toggled client-side (see script). starts hidden since hide-explicit is checked by default. */}
-			<span id="blur-explicit-wrap" hidden>
-				<Toggle id="blur-explicit" label="Blur Explicit Content" checked />
-			</span>
-
-			{/* category filters — all checked by default; unchecking one hides that
-			    category (untagged art is never hidden). see script's applyFilter(). */}
-			<div class="tag-filters">
-				<span class="tag-filters-label">Show</span>
-				{TAG_FILTERS.map(({ tag, label }) => (
-					<label>
-						<input type="checkbox" data-tag-filter={tag} checked />
-						{label}
-					</label>
-				))}
-			</div>
-
-			{/* modifier: restrict to moving media (video / gif). ANDs with the
-			    category checkboxes, so it can isolate e.g. animated sketches. */}
-			<label class="only-animated">
-				<input type="checkbox" id="only-animated" />
-				Only animated
-			</label>
-
-			{/* dev-only review tracking for the big tagging pass (see script). */}
-			{LOCAL_ADMIN && (
-				<label class="review-filter">
-					<input type="checkbox" id="hide-checked" />
-					Hide reviewed
-					<span id="review-progress"></span>
-				</label>
-			)}
-		</div>
 	</header>
 	<main>
 		<section class="gallery"></section>
@@ -152,12 +173,26 @@ const TAG_FILTERS = [
 		align-items: center;
 		gap: 0.5em 1em;
 
+		/* on wide screens these wrappers exist only to give the collapse toggle
+		   somewhere to live — display:contents lets their children (h1, the
+		   About button, .options) act as direct flex items of header, same as
+		   before this was split into a collapsible chunk. the mobile media
+		   query below switches them to real boxes. */
+		.header-bar,
+		.header-controls {
+			display: contents;
+		}
+
 		h1 {
 			margin: 0;
 			font-size: clamp(1.1rem, 4.5vw, 1.6rem);
 		}
 
-		> button[data-popup-open] {
+		.header-toggle {
+			display: none; /* only shown on narrow screens, see media query */
+		}
+
+		.header-controls > button[data-popup-open] {
 			flex: none;
 			padding: 0.4em 0.7em;
 			border: 1px solid #ccc;
@@ -241,22 +276,68 @@ const TAG_FILTERS = [
 	}
 
 	/* narrow screens: the title + About + controls all cramming into one
-	   wrapping row reads as scrunched, so give the title its own line and let
-	   the controls span the full width below it with a bit more breathing room. */
+	   wrapping row reads as scrunched and eats too much of the screen, so the
+	   title gets its own row with a toggle button, and everything else (the
+	   About button + all the filter controls) folds away behind it, collapsed
+	   by default. header's ResizeObserver (see script) keeps <main>'s offset
+	   synced as the fold opens/closes. */
 	@media (max-width: 600px) {
 		header {
 			padding: 0.6em 0.9em;
 			gap: 0.55em 0.75em;
 		}
 
-		header h1 {
-			flex-basis: 100%; /* title on its own row */
+		header .header-bar {
+			display: flex;
+			width: 100%;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0.75em;
+		}
+
+		header .header-toggle {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.35em;
+			flex: none;
+			padding: 0.4em 0.7em;
+			border: 1px solid #ccc;
+			border-radius: 6px;
+			background: #fff;
+			font-size: 0.85em;
+			cursor: pointer;
+		}
+
+		header .header-toggle-icon {
+			display: inline-block;
+			transition: transform 0.15s;
+		}
+
+		header .header-toggle[aria-expanded="true"] .header-toggle-icon {
+			transform: rotate(180deg);
+		}
+
+		header .header-controls {
+			display: none; /* collapsed by default; opened via .expanded below */
+			width: 100%;
+			flex-direction: column;
+			align-items: stretch;
+			gap: 0.6em;
+		}
+
+		header.expanded .header-controls {
+			display: flex;
+		}
+
+		header .header-controls > button[data-popup-open] {
+			align-self: flex-start;
 		}
 
 		header .options {
 			width: 100%;
-			margin-left: 0; /* fill the row instead of right-aligning */
-			justify-content: space-between;
+			flex-direction: column;
+			align-items: stretch;
+			margin-left: 0;
 		}
 
 		header .card-size input {
@@ -428,6 +509,49 @@ const TAG_FILTERS = [
 		filter: blur(12px);
 	}
 
+	/* touch-only draggable scrollbar thumb (built + positioned by the script's
+	   initTouchScrollbar — global because it's a JS-created element, so it
+	   never gets Astro's scoped-style attribute). the OS thumb shrinks
+	   proportionally to page length, and this gallery is extremely tall, so
+	   the native thumb ends up a sliver too small to grab with a finger — this
+	   enforces a generous minimum size instead. desktop keeps the native,
+	   already-widened scrollbar (see global.css); pointer:coarse + hover:none
+	   is the signal for "actually a touchscreen". */
+	.scrollbar-track {
+		display: none;
+	}
+
+	@media (hover: none) and (pointer: coarse) {
+		.scrollbar-track {
+			display: block;
+			position: fixed;
+			top: 0;
+			right: 0;
+			width: 30px;
+			height: 100dvh;
+			z-index: 50; /* under the header's z-index: 100, so its buttons stay tappable when the thumb is near the top */
+			pointer-events: none; /* only the thumb itself intercepts touches */
+		}
+
+		.scrollbar-thumb {
+			position: absolute;
+			right: 2px;
+			width: 26px;
+			min-height: 64px;
+			border-radius: 10px;
+			background: rgba(0, 0, 0, 0.35);
+			/* transparent border + background-clip pads out a big touch target
+			   around a slim visible pill, same trick as the desktop scrollbar. */
+			border: 9px solid transparent;
+			background-clip: content-box;
+			pointer-events: auto;
+			touch-action: none;
+		}
+
+		.scrollbar-thumb:active {
+			background: rgba(0, 0, 0, 0.55);
+		}
+	}
 </style>
 
 <script>
@@ -877,6 +1001,18 @@ const TAG_FILTERS = [
 			}).observe(header);
 		}
 
+		// mobile: the About button + all filter controls fold away behind this
+		// toggle (see the max-width: 600px header rules) so the header doesn't
+		// eat the screen on a phone. the ResizeObserver above already re-syncs
+		// <main>'s offset whenever the fold opens/closes the header's height.
+		const header_toggle = document.querySelector<HTMLButtonElement>("#header-toggle");
+		if (header && header_toggle) {
+			header_toggle.addEventListener("click", () => {
+				const expanded = header.classList.toggle("expanded");
+				header_toggle.setAttribute("aria-expanded", String(expanded));
+			});
+		}
+
 		applyFilter();
 		layout();
 	}
@@ -900,8 +1036,78 @@ const TAG_FILTERS = [
 		});
 	}
 
+	// touch-only draggable scrollbar thumb (styling: .scrollbar-track /
+	// .scrollbar-thumb). the OS scrollbar thumb shrinks proportionally to page
+	// length — fine on a normal page, but this gallery is extremely tall, so
+	// the native thumb ends up a sliver too small to grab with a finger. this
+	// builds a real thumb with an enforced minimum size (see CSS min-height)
+	// and drags the window scroll position directly via pointer events.
+	function initTouchScrollbar() {
+		const track = document.createElement("div");
+		track.className = "scrollbar-track";
+		const thumb = document.createElement("div");
+		thumb.className = "scrollbar-thumb";
+		track.appendChild(thumb);
+		document.body.appendChild(track);
+
+		function update() {
+			const doc = document.documentElement;
+			const trackHeight = track.clientHeight;
+			const scrollable = doc.scrollHeight - doc.clientHeight;
+			if (scrollable <= 0 || trackHeight <= 0) {
+				thumb.style.visibility = "hidden";
+				return;
+			}
+			thumb.style.visibility = "";
+			const thumbHeight = Math.max(64, (doc.clientHeight / doc.scrollHeight) * trackHeight);
+			const maxThumbTop = trackHeight - thumbHeight;
+			thumb.style.height = thumbHeight + "px";
+			thumb.style.top = (window.scrollY / scrollable) * maxThumbTop + "px";
+		}
+
+		// drag the thumb → scroll the window. tracked relative to where the
+		// drag started (rather than absolute finger position) so grabbing the
+		// thumb doesn't jump it under the finger first.
+		let dragStartClientY = 0;
+		let dragStartScrollY = 0;
+		let dragging = false;
+
+		thumb.addEventListener("pointerdown", (e) => {
+			dragging = true;
+			dragStartClientY = e.clientY;
+			dragStartScrollY = window.scrollY;
+			thumb.setPointerCapture(e.pointerId);
+		});
+
+		thumb.addEventListener("pointermove", (e) => {
+			if (!dragging) return;
+			const doc = document.documentElement;
+			const scrollable = doc.scrollHeight - doc.clientHeight;
+			const maxThumbTop = track.clientHeight - thumb.clientHeight;
+			if (scrollable <= 0 || maxThumbTop <= 0) return;
+			const scrollDelta = ((e.clientY - dragStartClientY) / maxThumbTop) * scrollable;
+			window.scrollTo(0, dragStartScrollY + scrollDelta);
+		});
+
+		thumb.addEventListener("pointerup", (e) => {
+			dragging = false;
+			thumb.releasePointerCapture(e.pointerId);
+		});
+		thumb.addEventListener("pointercancel", () => {
+			dragging = false;
+		});
+
+		window.addEventListener("scroll", update, { passive: true });
+		window.addEventListener("resize", update);
+		// catches height changes update() alone wouldn't see promptly: header
+		// fold/unfold, filter changes relaying out the gallery, fonts loading.
+		new ResizeObserver(update).observe(document.body);
+		update();
+	}
+
 	// module scripts are deferred, so the dom is ready here.
 	init();
+	initTouchScrollbar();
 	window.addEventListener("scroll", () => schedule(false), { passive: true });
 	window.addEventListener("resize", () => schedule(true));
 </script>
