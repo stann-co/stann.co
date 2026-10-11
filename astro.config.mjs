@@ -124,7 +124,7 @@ function adminApi() {
   };
 }
 
-// custom domain (CNAME → stann.co), so no `base` is needed.
+// served at the domain root (stann.co), so no `base` is needed.
 export default defineConfig({
   site: "https://stann.co",
   vite: { plugins: [adminApi()] },

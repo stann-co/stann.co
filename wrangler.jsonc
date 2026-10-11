@@ -1,0 +1,11 @@
+// Cloudflare Workers config: serves the static Astro build from ./dist.
+// `name` must match the Worker's name in the Cloudflare dashboard.
+{
+  "name": "stann-co",
+  "compatibility_date": "2026-10-11",
+  "assets": {
+    "directory": "./dist",
+    // serve dist/404.html (src/pages/404.astro) for unknown paths
+    "not_found_handling": "404-page"
+  }
+}
