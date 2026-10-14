@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "data": "node process-bookmarks.mjs",
-    "merge": "node merge-bookmarks.mjs"
+    "merge": "node merge-bookmarks.mjs",
+    "prune": "node prune-broken.mjs"
   },
   "dependencies": {
     "astro": "^5.18.2",
